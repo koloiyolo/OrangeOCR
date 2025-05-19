@@ -17,3 +17,6 @@ pyinstaller --onefile --name OrangeOCR main.py
 * `sqlite3` database
 * `pypdf2` as PDF OCR tool
 * `pandas`
+
+![image](https://github.com/user-attachments/assets/5981971e-41b5-47c2-840b-f2f960cc5cf8)
+
