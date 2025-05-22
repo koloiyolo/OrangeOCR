@@ -1,8 +1,8 @@
 import sqlite3
 import pandas as pd
 
-database_file = 'database.db'
 
+database_file = 'database.db'
 
 def init_db():
     """
@@ -30,25 +30,6 @@ def init_db():
             """)
     conn.commit()
     conn.close()
-
-
-def save_to_database(month, df):
-    try:
-        init_db()
-        conn = sqlite3.connect(database_file)
-        cursor = conn.cursor()
-
-        for _,row in df.iterrows():
-            cursor.execute("""
-                                    INSERT INTO data (nr, miesiac, netto, brutto)
-                                    VALUES (?, ?, ?, ?)
-                                """, (row['nr'], month, row['netto'], row['brutto']))
-
-        conn.commit()
-        conn.close()
-
-    except sqlite3.Error as e:
-        print(f"Error executing query: {e}")
 
 def execute(statement, params=None):
     """
