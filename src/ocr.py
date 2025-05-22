@@ -3,6 +3,12 @@ import re
 import pandas as pd
 
 def extract_data_from_pdf(file_path):
+    """
+    Scrapes and processes from PDF file chosen
+    by users and saves the data into DataFrame.
+    :param file_path:file path of file to process
+    :return: DataFrame with processed Data
+    """
     with open(file_path, "rb") as file:
         reader = PyPDF2.PdfReader(file)
         page = reader.pages[1]

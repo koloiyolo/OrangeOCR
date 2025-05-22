@@ -5,6 +5,11 @@ database_file = 'database.db'
 
 
 def init_db():
+    """
+    Initializes database schema if
+    database doesn't exist
+    :return:
+    """
     conn = sqlite3.connect(database_file)
     cursor = conn.cursor()
     cursor.execute("""
@@ -27,83 +32,6 @@ def init_db():
     conn.close()
 
 
-def read_database(month):
-    try:
-        init_db()
-        conn = sqlite3.connect(database_file)
-        cursor = conn.cursor()
-
-        if month:
-            sql_query = """
-                            SELECT u.nr, u.name, u.department, u.account, d.netto, d.brutto
-                            FROM users u
-                            LEFT JOIN data d ON u.nr = d.nr
-                            WHERE d.miesiac = ?
-                            UNION
-                            SELECT NULL, NULL, 'Konto: ', u.account AS konto, ROUND(SUM(d.netto), 2) AS Netto, ROUND(SUM(d.brutto), 2) AS Brutto
-                            FROM users u
-                            LEFT JOIN data d ON u.nr = d.nr
-                            WHERE d.miesiac = ?
-                            GROUP BY u.account
-                            UNION
-                            SELECT NULL, NULL, NULL, 'Razem:', ROUND(SUM(d.netto), 2) AS Netto, ROUND(SUM(d.brutto), 2) AS Brutto
-                            FROM users u
-                            LEFT JOIN data d ON u.nr = d.nr
-                            WHERE d.miesiac = ?
-                        """
-
-            cursor.execute(sql_query, (month, month, month))
-            rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            df = pd.DataFrame(rows, columns=columns)
-            conn.close()
-            return df
-
-        else:
-
-            sql_query = """
-                            SELECT u.nr, u.name, u.department, u.account, SUM(d.netto), SUM(d.brutto)
-                            FROM users u
-                            LEFT JOIN data d ON u.nr = d.nr
-                            GROUP BY u.nr, u.name, u.department, u.account
-                            UNION
-                            SELECT NULL, NULL, 'Konto: ', u.account AS konto, ROUND(SUM(d.netto), 2) AS Netto, ROUND(SUM(d.brutto), 2) AS Brutto
-                            FROM users u
-                            LEFT JOIN data d ON u.nr = d.nr
-                            GROUP BY u.account
-                            UNION
-                            SELECT NULL, NULL, NULL, 'Razem:', ROUND(SUM(d.netto), 2) AS Netto, ROUND(SUM(d.brutto), 2) AS Brutto
-                            FROM users u
-                            LEFT JOIN data d ON u.nr = d.nr
-                        """
-
-            cursor.execute(sql_query)
-            rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            df = pd.DataFrame(rows, columns=columns)
-            conn.close()
-            return df
-
-    except sqlite3.Error as e:
-        print(f"Error executing query: {e}")
-
-
-def delete_from_database(month):
-    try:
-        init_db()
-        conn = sqlite3.connect(database_file)
-        cursor = conn.cursor()
-        cursor.execute("""
-                       DELETE FROM data
-                       WHERE miesiac = ? 
-                       """, (month,))
-        conn.commit()
-        conn.close()
-
-    except sqlite3.Error as e:
-        print(f"Error executing query: {e}")
-
-
 def save_to_database(month, df):
     try:
         init_db()
@@ -121,3 +49,39 @@ def save_to_database(month, df):
 
     except sqlite3.Error as e:
         print(f"Error executing query: {e}")
+
+def execute(statement, params=None):
+    """
+    Executes SQL statement and returns output as
+    DataFrame.
+    :param statement: SQL statement to execute
+    :param params: (optional) params for SQL statement
+    :return:
+    """
+    try:
+        init_db()
+        df = None
+        conn = sqlite3.connect(database_file)
+        cursor = conn.cursor()
+
+        if params:
+            cursor.execute(statement, params)
+        else:
+            cursor.execute(statement)
+
+        rows = cursor.fetchall()
+        columns = None
+        if rows:
+            columns = [desc[0] for desc in cursor.description]
+
+        conn.commit()
+        conn.close()
+
+        if columns:
+            df = pd.DataFrame(rows, columns=columns)
+            return df
+        return True
+
+    except sqlite3.Error as e:
+        print(f"Error executing query: {e}")
+        return False
