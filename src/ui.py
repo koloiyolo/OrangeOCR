@@ -142,9 +142,25 @@ class UI(QWidget):
                     LEFT JOIN data d ON u.nr = d.nr
                     """
         if month:
-            statement = statement + """
-                                    WHERE d.miesiac = ?
-                                    """
+            statement = """
+                        SELECT u.nr, u.name, u.department, u.account, SUM(d.netto), SUM(d.brutto)
+                        FROM users u
+                        LEFT JOIN data d ON u.nr = d.nr
+                        WHERE d.miesiac = ?
+                        GROUP BY u.nr, u.name, u.department, u.account
+                        UNION
+                        SELECT NULL, NULL, 'Konto: ', u.account AS konto, ROUND(SUM(d.netto), 2) AS Netto, ROUND(SUM(d.brutto), 2) AS Brutto
+                        FROM users u
+                        LEFT JOIN data d ON u.nr = d.nr
+                        WHERE d.miesiac = ?
+                        GROUP BY u.account
+                        UNION
+                        SELECT NULL, NULL, NULL, 'Razem:', ROUND(SUM(d.netto), 2) AS Netto, ROUND(SUM(d.brutto), 2) AS Brutto
+                        FROM users u
+                        WHERE d.miesiac = ?
+                        LEFT JOIN data d ON u.nr = d.nr
+                        """
+
             self.df = execute(statement, params=(month, ))
         else:
             self.df = execute(statement)
